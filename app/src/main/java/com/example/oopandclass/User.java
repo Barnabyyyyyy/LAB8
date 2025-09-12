@@ -1,17 +1,32 @@
 package com.example.oopandclass;
 
-public class User {
-        String fullname;
-        String ArrayList;
-        String age;
-        void addNote() {
+public abstract class User {
+        private String titleOfTextNote, contentOfTextNote;
 
-        }
-        void showAllNotes() {
 
+        public User(String name, String userId) {
+                this.titleOfTextNote = name;
+                this.contentOfTextNote = userId;
         }
-        void showNoteSummary() {
 
+        // Encapsulation
+        public String getName() {
+                return titleOfTextNote;
         }
-    }
+
+        public void setName(String name) {
+                this.titleOfTextNote = name;
+        }
+
+        public String getUserId() {
+                return contentOfTextNote;
+        }
+
+        public void setUserId(String userId) {
+                this.contentOfTextNote = userId;
+        }
+
+        // Abstraction
+        public abstract void showInfo();
+}
 
