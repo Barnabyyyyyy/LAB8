@@ -1,5 +1,7 @@
 package com.example.oopandclass;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,14 +17,27 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
+
 public class DisplayNoteActivity extends AppCompatActivity {
 
     Button Button;
 
     Button Button1;
     EditText titleOfTextNote, contentOfTextNote;
-    TextView showNote;
+    TextView showNote, showNoteFromAPI;
     ProgressBar progressBar;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +53,59 @@ public class DisplayNoteActivity extends AppCompatActivity {
         titleOfTextNote = findViewById(R.id.editTextText3);
         progressBar = findViewById(R.id.progressBar2);
         showNote = findViewById(R.id.textView6);
+        showNoteFromAPI = findViewById(R.id.textView3);
         Button = findViewById(R.id.button5);
         Button1 = findViewById(R.id.button6);
+
+
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            List<NoteEntity> entities = AppDatabase.getInstance(this).noteDao().getAll();
+            List<Note> notes = new ArrayList<>();
+            for (NoteEntity entity : entities) {
+                notes.add(NoteMapper.fromEntity(entity));
+            }
+            runOnUiThread(() -> {
+                StringBuilder sb = new StringBuilder();
+                for (Note note : notes) {
+                    sb.append(note.display()).append("\n");
+                }
+                showNote.setText(sb.toString());
+            });
+        });
+
+        //load from API
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://jsonplaceholder.typicode.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<List<Textnote>> call = apiService.getTextNote();
+
+        call.enqueue(new Callback<List<Textnote>>() {
+            @Override
+            public void onResponse(Call<List<Textnote>> call, Response<List<Textnote>> response) {
+                if (!response.isSuccessful()) {
+                    showNoteFromAPI.setText("Error Code: " + response.code());
+                    return;
+                }
+
+                List<Textnote> notes = response.body();
+                StringBuilder builder = new StringBuilder();
+                for (Textnote n : notes) {
+                    builder.append("Title: ").append(n.getTitle()).append("\n")
+                            .append("Body: ").append(n.getTextContent()).append("\n\n");
+                }
+                showNoteFromAPI.setText(builder.toString());
+            }
+
+            @Override
+            public void onFailure(Call<List<Textnote>> call, Throwable t) {
+                showNoteFromAPI.setText("Failed: " + t.getMessage());
+            }
+        });
 
         progressBar.setVisibility(View.GONE);
         showNote.setVisibility(View.GONE);
@@ -70,11 +136,7 @@ public class DisplayNoteActivity extends AppCompatActivity {
 
                     });
                 }).start();
-
             }
         });
-
-
-
     }
 }
